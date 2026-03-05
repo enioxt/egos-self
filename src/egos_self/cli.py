@@ -66,41 +66,45 @@ def log_event(
 
 
 async def get_kdeconnect_devices() -> list[dict]:
-    """Get paired KDE Connect devices via DBus."""
+    """Get paired KDE Connect devices via DBus (low-level Message API)."""
     try:
         from dbus_next.aio import MessageBus
+        from dbus_next import Message
 
         bus = await MessageBus().connect()
-        introspection = await bus.introspect(
-            "org.kde.kdeconnect", "/modules/kdeconnect"
+
+        # Get all device IDs via low-level call
+        msg = Message(
+            destination="org.kde.kdeconnect",
+            path="/modules/kdeconnect",
+            interface="org.kde.kdeconnect.daemon",
+            member="devices",
+            signature="bb",
+            body=[False, False],
         )
-        obj = bus.get_proxy_object(
-            "org.kde.kdeconnect", "/modules/kdeconnect", introspection
-        )
-        iface = obj.get_interface("org.kde.kdeconnect.daemon")
-        device_ids = await iface.call_devices()
+        reply = await bus.call(msg)
+        device_ids = reply.body[0] if reply.body else []
 
         devices = []
         for dev_id in device_ids:
-            dev_intro = await bus.introspect(
-                "org.kde.kdeconnect", f"/modules/kdeconnect/devices/{dev_id}"
-            )
+            dev_path = f"/modules/kdeconnect/devices/{dev_id}"
+            dev_intro = await bus.introspect("org.kde.kdeconnect", dev_path)
             dev_obj = bus.get_proxy_object(
-                "org.kde.kdeconnect",
-                f"/modules/kdeconnect/devices/{dev_id}",
-                dev_intro,
+                "org.kde.kdeconnect", dev_path, dev_intro
             )
-            dev_iface = dev_obj.get_interface("org.kde.kdeconnect.device")
+            props = dev_obj.get_interface("org.freedesktop.DBus.Properties")
 
-            name = await dev_iface.get_name()
-            is_reachable = await dev_iface.get_is_reachable()
-            is_paired = await dev_iface.get_is_paired()
+            name = await props.call_get("org.kde.kdeconnect.device", "name")
+            is_paired = await props.call_get("org.kde.kdeconnect.device", "isPaired")
+            is_reachable = await props.call_get("org.kde.kdeconnect.device", "isReachable")
+            dev_type = await props.call_get("org.kde.kdeconnect.device", "type")
 
             devices.append({
                 "id": dev_id,
-                "name": name,
-                "reachable": is_reachable,
-                "paired": is_paired,
+                "name": name.value,
+                "reachable": is_reachable.value,
+                "paired": is_paired.value,
+                "type": dev_type.value,
             })
 
         bus.disconnect()
@@ -110,16 +114,21 @@ async def get_kdeconnect_devices() -> list[dict]:
 
 
 async def send_notification(device_id: str, text: str) -> bool:
-    """Send a notification/ping to a KDE Connect device."""
+    """Send a ping with custom message to a KDE Connect device."""
     try:
         from dbus_next.aio import MessageBus
+        from dbus_next import Message
 
         bus = await MessageBus().connect()
-        path = f"/modules/kdeconnect/devices/{device_id}/ping"
-        introspection = await bus.introspect("org.kde.kdeconnect", path)
-        obj = bus.get_proxy_object("org.kde.kdeconnect", path, introspection)
-        iface = obj.get_interface("org.kde.kdeconnect.device.ping")
-        await iface.call_send_ping_with_custom_message(text)
+        msg = Message(
+            destination="org.kde.kdeconnect",
+            path=f"/modules/kdeconnect/devices/{device_id}/ping",
+            interface="org.kde.kdeconnect.device.ping",
+            member="sendPing",
+            signature="s",
+            body=[text],
+        )
+        await bus.call(msg)
         bus.disconnect()
         return True
     except Exception:
@@ -157,7 +166,11 @@ def status():
     for dev in devices:
         reach = "[green]YES[/green]" if dev.get("reachable") else "[red]NO[/red]"
         paired = "[green]YES[/green]" if dev.get("paired") else "[red]NO[/red]"
-        table.add_row(dev.get("name", "?"), dev.get("id", "?"), reach, paired)
+        name = dev.get("name", "?")
+        dev_type = dev.get("type", "")
+        if dev_type:
+            name = f"{name} ({dev_type})"
+        table.add_row(name, dev.get("id", "?")[:12] + "...", reach, paired)
 
     console.print(table)
 
