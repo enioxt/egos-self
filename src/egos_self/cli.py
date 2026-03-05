@@ -366,12 +366,13 @@ def relay(port: int, host: str):
 
 
 @main.command()
-def login():
+@click.option("--token", default=None, help="GitHub PAT (non-interactive mode)")
+def login(token: str | None):
     """Authenticate with GitHub (Personal Access Token)."""
     from egos_self.config import get_github_token, set_github_token
 
     existing = get_github_token()
-    if existing:
+    if existing and not token:
         try:
             from egos_self.git_layer import get_authenticated_user
             user = get_authenticated_user()
@@ -381,15 +382,16 @@ def login():
         except Exception:
             console.print("[yellow]Stored token is invalid. Please re-authenticate.[/yellow]")
 
-    console.print("[bold cyan]EGOS Self — GitHub Login[/bold cyan]")
-    console.print()
-    console.print("Create a Personal Access Token at:")
-    console.print("  [green]https://github.com/settings/tokens/new[/green]")
-    console.print()
-    console.print("Required scopes: [bold]repo[/bold] (for private repos) or [bold]public_repo[/bold] (public only)")
-    console.print()
+    if not token:
+        console.print("[bold cyan]EGOS Self — GitHub Login[/bold cyan]")
+        console.print()
+        console.print("Create a Personal Access Token at:")
+        console.print("  [green]https://github.com/settings/tokens/new[/green]")
+        console.print()
+        console.print("Required scopes: [bold]repo[/bold] (for private repos) or [bold]public_repo[/bold] (public only)")
+        console.print()
+        token = click.prompt("Paste your GitHub token", hide_input=True)
 
-    token = click.prompt("Paste your GitHub token", hide_input=True)
     if not token or len(token) < 10:
         console.print("[red]Invalid token.[/red]")
         return
