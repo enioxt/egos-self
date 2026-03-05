@@ -55,6 +55,28 @@
 
 ---
 
+## Phase 3.5: Git Layer (v0.3.5) — "Own your identity"
+
+**Goal:** GitHub as identity and data backbone, with an abstraction layer ready for self-hosted alternatives.
+
+| Task | Description | Status |
+|------|-------------|--------|
+| Config system | TOML config + secure credentials (600 perms) | ✅ Done |
+| `egos login` | GitHub PAT authentication | ✅ Done |
+| `egos whoami` | Show authenticated identity | ✅ Done |
+| `egos repos` | List GitHub repositories | ✅ Done |
+| `egos logout` | Remove stored credentials | ✅ Done |
+| GitProvider interface | Abstraction for GitHub/Forgejo/local | ✅ Designed |
+| `egos sync` | Push/pull events to a GitHub repo | |
+| Event export | Export events.db as JSON to repo | |
+| Forgejo provider | Self-hosted alternative to GitHub | |
+| Web UI | Browser-based repo/event viewer | |
+
+**Stack:** stdlib urllib (zero deps), TOML config
+**Architecture:** `docs/GIT_LAYER_ARCHITECTURE.md`
+
+---
+
 ## Phase 4: Universal Agent (v0.4) — "Act on your behalf"
 
 **Goal:** The CLI becomes an agent that can execute tasks, not just route messages.
