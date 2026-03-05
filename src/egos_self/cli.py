@@ -208,18 +208,20 @@ def send(text: str):
     """Send a message to all paired devices."""
     devices = asyncio.run(get_kdeconnect_devices())
     reachable = [d for d in devices if d.get("reachable") and d.get("paired")]
+    delivered = False
 
     if not reachable:
-        console.print("[red]No reachable paired devices found.[/red]")
-        return
+        console.print("[yellow]No reachable devices — message stored locally.[/yellow]")
+    else:
+        for dev in reachable:
+            ok = asyncio.run(send_notification(dev["id"], text))
+            status_str = "[green]sent[/green]" if ok else "[red]failed[/red]"
+            console.print(f"  → {dev['name']}: {status_str}")
+            if ok:
+                delivered = True
 
-    for dev in reachable:
-        ok = asyncio.run(send_notification(dev["id"], text))
-        status = "[green]sent[/green]" if ok else "[red]failed[/red]"
-        console.print(f"  → {dev['name']}: {status}")
-
-    log_event("msg", {"text": text}, device_to="all")
-    console.print(f"[dim]Event logged.[/dim]")
+    log_event("msg", {"text": text, "delivered": delivered}, device_to="all" if reachable else "local")
+    console.print("[dim]Event logged.[/dim]")
 
 
 @main.command()
