@@ -476,5 +476,44 @@ def logout():
     log_event("auth", {"action": "logout"})
 
 
+
+@main.command()
+def ecosystem():
+    """Show EGOS ecosystem: repos, token, community links."""
+    console.print("[bold cyan]EGOS Ecosystem[/bold cyan]\n")
+
+    # Repos
+    table = Table(title="Repositories")
+    table.add_column("Project", style="bold")
+    table.add_column("GitHub", style="dim")
+    table.add_column("Type")
+    table.add_column("Status")
+    repos = [
+        ("EGOS Self", "enioxt/egos-self", "CLI + Android", "MVP"),
+        ("EGOS Lab", "enioxt/egos-lab", "Framework + Agents", "Production"),
+        ("EGOS Inteligencia", "enioxt/EGOS-Inteligencia", "OSINT Platform", "Production"),
+        ("Carteira Livre", "enioxt/carteira-livre", "Marketplace", "Production"),
+        ("Forja", "enioxt/FORJA", "Chat-first ERP", "Planning"),
+    ]
+    for name, gh, typ, st in repos:
+        table.add_row(name, gh, typ, st)
+    console.print(table)
+
+    # Token
+    console.print("\n[bold]$ETHIK Token[/bold]")
+    console.print("  Chain: Base (Coinbase L2)")
+    console.print("  Contract: 0x633b346b85c4877ace4d47f7aa72c2a092136cb5")
+    console.print("  Flaunch: flaunch.gg/base/coin/0x633b346b85c4877ace4d47f7aa72c2a092136cb5")
+    console.print("  Model: 95% community, 5% creator (100% re-invested via buyback)")
+
+    # Community
+    console.print("\n[bold]Community[/bold]")
+    console.print("  Telegram: t.me/ethikin")
+    console.print("  Discord: discord.gg/jJGs5DpFh")
+    console.print("  Website: egos.ia.br")
+    console.print("  Meta Prompt: github.com/enioxt/egos-lab/blob/main/docs/META_PROMPT_ECOSYSTEM_AUDIT.md")
+
+    log_event("ecosystem", {"action": "view"})
+
 if __name__ == "__main__":
     main()
