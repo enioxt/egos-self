@@ -365,5 +365,114 @@ def relay(port: int, host: str):
         console.print("\n[yellow]Relay stopped.[/yellow]")
 
 
+@main.command()
+def login():
+    """Authenticate with GitHub (Personal Access Token)."""
+    from egos_self.config import get_github_token, set_github_token
+
+    existing = get_github_token()
+    if existing:
+        try:
+            from egos_self.git_layer import get_authenticated_user
+            user = get_authenticated_user()
+            console.print(f"[green]Already logged in as:[/green] [bold]{user.username}[/bold] ({user.name})")
+            console.print("[dim]Run 'egos logout' first to switch accounts.[/dim]")
+            return
+        except Exception:
+            console.print("[yellow]Stored token is invalid. Please re-authenticate.[/yellow]")
+
+    console.print("[bold cyan]EGOS Self — GitHub Login[/bold cyan]")
+    console.print()
+    console.print("Create a Personal Access Token at:")
+    console.print("  [green]https://github.com/settings/tokens/new[/green]")
+    console.print()
+    console.print("Required scopes: [bold]repo[/bold] (for private repos) or [bold]public_repo[/bold] (public only)")
+    console.print()
+
+    token = click.prompt("Paste your GitHub token", hide_input=True)
+    if not token or len(token) < 10:
+        console.print("[red]Invalid token.[/red]")
+        return
+
+    console.print("[dim]Validating...[/dim]")
+    from egos_self.git_layer import validate_token
+    user = validate_token(token)
+
+    if user:
+        set_github_token(token)
+        console.print(f"[green]Authenticated as:[/green] [bold]{user.username}[/bold] ({user.name})")
+        console.print(f"[dim]Token stored in ~/.config/egos-self/credentials.toml (600 permissions)[/dim]")
+        log_event("auth", {"action": "login", "user": user.username})
+    else:
+        console.print("[red]Token validation failed. Check your token and try again.[/red]")
+
+
+@main.command()
+def whoami():
+    """Show current authenticated identity."""
+    from egos_self.config import get_github_token
+
+    if not get_github_token():
+        console.print("[yellow]Not logged in.[/yellow] Run: [bold]egos login[/bold]")
+        return
+
+    try:
+        from egos_self.git_layer import get_authenticated_user
+        user = get_authenticated_user()
+        console.print(f"[bold]{user.username}[/bold] ({user.name})")
+        console.print(f"  Repos: {user.public_repos} | Followers: {user.followers}")
+        if user.bio:
+            console.print(f"  Bio: {user.bio[:80]}")
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+
+
+@main.command()
+def repos():
+    """List your GitHub repositories."""
+    from egos_self.config import get_github_token
+
+    if not get_github_token():
+        console.print("[yellow]Not logged in.[/yellow] Run: [bold]egos login[/bold]")
+        return
+
+    try:
+        from egos_self.git_layer import list_repos
+        repo_list = list_repos()
+
+        if not repo_list:
+            console.print("[dim]No repos found.[/dim]")
+            return
+
+        table = Table(title="Your Repositories")
+        table.add_column("Name", style="bold")
+        table.add_column("Language", style="dim")
+        table.add_column("Stars", justify="right")
+        table.add_column("Updated", style="dim")
+        table.add_column("Visibility")
+
+        for r in repo_list:
+            vis = "[red]private[/red]" if r.private else "[green]public[/green]"
+            table.add_row(r.full_name, r.language, str(r.stars), r.updated_at, vis)
+
+        console.print(table)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+
+
+@main.command()
+def logout():
+    """Remove stored GitHub credentials."""
+    from egos_self.config import get_github_token, remove_github_token
+
+    if not get_github_token():
+        console.print("[dim]Not logged in.[/dim]")
+        return
+
+    remove_github_token()
+    console.print("[green]Logged out.[/green] Token removed from ~/.config/egos-self/credentials.toml")
+    log_event("auth", {"action": "logout"})
+
+
 if __name__ == "__main__":
     main()
