@@ -143,36 +143,54 @@ def main():
 
 
 @main.command()
-def status():
+@click.option("--relay", default=None, help="WebSocket relay URL (e.g. ws://your-server:8765)")
+@click.option("--channel", default=None, help="Channel code for WebSocket relay")
+def status(relay: str | None, channel: str | None):
     """Show connected devices, battery, and signal."""
     console.print(f"[bold]EGOS Self[/bold] v{__version__}", style="cyan")
     console.print(f"Data: {DATA_DIR}")
     console.print()
 
+    # KDE Connect (LAN)
     devices = asyncio.run(get_kdeconnect_devices())
 
     if not devices or (len(devices) == 1 and "error" in devices[0]):
         err = devices[0].get("error", "Unknown") if devices else "No DBus"
-        console.print(f"[yellow]KDE Connect not available:[/yellow] {err}")
-        console.print("Make sure kdeconnectd is running.")
-        return
+        console.print(f"[yellow]KDE Connect:[/yellow] {err}")
+    else:
+        table = Table(title="KDE Connect (LAN)")
+        table.add_column("Name", style="bold")
+        table.add_column("ID", style="dim")
+        table.add_column("Reachable", justify="center")
+        table.add_column("Paired", justify="center")
 
-    table = Table(title="KDE Connect Devices")
-    table.add_column("Name", style="bold")
-    table.add_column("ID", style="dim")
-    table.add_column("Reachable", justify="center")
-    table.add_column("Paired", justify="center")
+        for dev in devices:
+            reach = "[green]YES[/green]" if dev.get("reachable") else "[red]NO[/red]"
+            paired = "[green]YES[/green]" if dev.get("paired") else "[red]NO[/red]"
+            name = dev.get("name", "?")
+            dev_type = dev.get("type", "")
+            if dev_type:
+                name = f"{name} ({dev_type})"
+            table.add_row(name, dev.get("id", "?")[:12] + "...", reach, paired)
 
-    for dev in devices:
-        reach = "[green]YES[/green]" if dev.get("reachable") else "[red]NO[/red]"
-        paired = "[green]YES[/green]" if dev.get("paired") else "[red]NO[/red]"
-        name = dev.get("name", "?")
-        dev_type = dev.get("type", "")
-        if dev_type:
-            name = f"{name} ({dev_type})"
-        table.add_row(name, dev.get("id", "?")[:12] + "...", reach, paired)
+        console.print(table)
 
-    console.print(table)
+    # WebSocket relay (WAN)
+    if relay:
+        console.print()
+        try:
+            from egos_self.transport import WebSocketTransport
+            ws = WebSocketTransport(relay_url=relay, channel=channel or "default")
+            ok = asyncio.run(ws.connect())
+            if ok:
+                console.print(f"[green]WebSocket relay:[/green] connected to {relay} (channel: {ws.channel})")
+                asyncio.run(ws.disconnect())
+            else:
+                console.print(f"[red]WebSocket relay:[/red] failed to connect to {relay}")
+        except ImportError:
+            console.print("[yellow]WebSocket:[/yellow] pip install websockets to enable WAN mode")
+    else:
+        console.print("\n[dim]Tip: use --relay ws://server:8765 for internet-wide communication[/dim]")
 
     # Show event count
     try:
@@ -204,23 +222,50 @@ def ping():
 
 @main.command()
 @click.argument("text")
-def send(text: str):
-    """Send a message to all paired devices."""
+@click.option("--relay", default=None, help="WebSocket relay URL for WAN delivery")
+@click.option("--channel", default=None, help="Channel code for WebSocket relay")
+def send(text: str, relay: str | None, channel: str | None):
+    """Send a message to all paired devices (LAN + WAN)."""
+    delivered = False
+    transport_used = "local"
+
+    # Try KDE Connect (LAN)
     devices = asyncio.run(get_kdeconnect_devices())
     reachable = [d for d in devices if d.get("reachable") and d.get("paired")]
-    delivered = False
 
-    if not reachable:
-        console.print("[yellow]No reachable devices — message stored locally.[/yellow]")
-    else:
+    if reachable:
         for dev in reachable:
             ok = asyncio.run(send_notification(dev["id"], text))
             status_str = "[green]sent[/green]" if ok else "[red]failed[/red]"
-            console.print(f"  → {dev['name']}: {status_str}")
+            console.print(f"  → {dev['name']} (LAN): {status_str}")
             if ok:
                 delivered = True
+                transport_used = "kdeconnect"
 
-    log_event("msg", {"text": text, "delivered": delivered}, device_to="all" if reachable else "local")
+    # Try WebSocket relay (WAN)
+    if relay:
+        try:
+            from egos_self.transport import WebSocketTransport, Envelope
+            ws = WebSocketTransport(relay_url=relay, channel=channel or "default")
+            ok = asyncio.run(ws.connect())
+            if ok:
+                env = Envelope(event_type="msg", body={"text": text})
+                sent = asyncio.run(ws.send(env))
+                asyncio.run(ws.disconnect())
+                status_str = "[green]sent[/green]" if sent else "[yellow]queued[/yellow]"
+                console.print(f"  → WebSocket relay ({ws.channel}): {status_str}")
+                if sent:
+                    delivered = True
+                    transport_used = "websocket"
+            else:
+                console.print(f"  → WebSocket relay: [red]connection failed[/red]")
+        except ImportError:
+            console.print("[yellow]pip install websockets for WAN mode[/yellow]")
+
+    if not delivered:
+        console.print("[yellow]No delivery — message stored locally.[/yellow]")
+
+    log_event("msg", {"text": text, "delivered": delivered, "transport": transport_used}, device_to="all")
     console.print("[dim]Event logged.[/dim]")
 
 
