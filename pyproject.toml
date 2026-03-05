@@ -14,7 +14,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+relay = ["websockets>=12.0"]
 ai = ["litellm>=1.0", "ollama>=0.3"]
+all = ["websockets>=12.0", "litellm>=1.0", "ollama>=0.3"]
 
 [project.scripts]
 egos = "egos_self.cli:main"

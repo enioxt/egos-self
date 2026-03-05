@@ -30,6 +30,9 @@ In the AI era, every person builds their own framework. But our tools are fragme
 
 **EGOS Self fixes this.** One CLI. Any device. Your intelligence, everywhere.
 
+> **If this helped you, share it.** That's the whole business model. There is no business model.
+> Free forever. No account. No telemetry. Just help.
+
 ## Architecture
 
 ```
@@ -82,6 +85,8 @@ egos log
 | `egos send "text"` | Send text notification to paired devices |
 | `egos log` | Show recent events (append-only local store) |
 | `egos stats` | Database statistics by event type |
+| `egos share` | Generate an invite link to share with someone |
+| `egos relay` | Start a WebSocket relay for internet-wide communication |
 
 ### Coming Soon (Phase 2+)
 
@@ -112,9 +117,25 @@ Every event follows this structure:
 }
 ```
 
+## Beyond WiFi — Internet-Wide Communication
+
+KDE Connect requires the same WiFi network. EGOS Self breaks that barrier with a **WebSocket relay**:
+
+```bash
+# On any server with a public IP (or your VPS):
+egos relay --port 8765
+
+# Now any EGOS Self client anywhere on the internet can connect
+# through the relay. No data is stored — pure pass-through.
+```
+
+Transport priority: KDE Connect (LAN) → WebSocket relay (WAN) → Direct TCP (future)
+
+The relay is ~80 lines of Python. Run your own. Trust no one but yourself.
+
 ## Design Principles
 
-1. **Transport agnostic** — KDE Connect first, TCP fallback, future: Bluetooth, USB
+1. **Transport agnostic** — KDE Connect first, WebSocket relay for internet, TCP direct for known IPs
 2. **AI agnostic** — Local (Ollama) or cloud (OpenRouter), you choose
 3. **Device agnostic** — Linux x86, ARM (Raspberry Pi), Android, anything with a terminal
 4. **Append-only** — Events are never deleted, only new events are added
@@ -127,7 +148,8 @@ Every event follows this structure:
 | Layer | Technology |
 |-------|------------|
 | CLI | Python 3.11+, Click, Rich |
-| Transport | dbus-next (KDE Connect via DBus) |
+| Transport (LAN) | dbus-next (KDE Connect via DBus) |
+| Transport (WAN) | websockets (relay server) |
 | Storage | SQLite (append-only event log) |
 | AI (Phase 2) | litellm + Ollama (local) or OpenRouter (cloud) |
 | Android (Phase 3) | KDE Connect plugin (Kotlin) |
@@ -152,6 +174,24 @@ Storage:    $0  (SQLite is local)
 AI:         $0  (Ollama local) or ~$0.001/msg (cloud API)
 Total:      $0/month for full functionality
 ```
+
+## Share It
+
+If EGOS Self helped you, share it with someone who needs it:
+
+```bash
+egos share  # generates a ready-to-send install guide
+```
+
+Or just send them this:
+
+```
+git clone https://github.com/enioxt/egos-self.git
+cd egos-self && pip install -e .
+egos status
+```
+
+**The best tool is the one you share.**
 
 ## Contributing
 

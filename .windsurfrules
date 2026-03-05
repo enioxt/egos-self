@@ -1,0 +1,104 @@
+# .windsurfrules — EGOS Self
+# VERSION 1.0.0 — 2026-03-05
+# Sacred Code: 000.111.369.963.1618
+
+---
+project: "egos-self"
+type: "open-source-cli"
+license: "MIT"
+---
+
+## CONSTITUTION (Inviolable)
+
+### Article 1: The Purpose Is To Help
+> EGOS Self exists to help people connect with their own intelligence across devices.
+> Every feature, every line of code, every decision must serve this purpose.
+> If it doesn't help someone, it doesn't ship.
+
+### Article 2: Share By Default
+> **The act of sharing IS the product.**
+> From day one, every interaction should naturally invite the user to share with someone who needs this.
+> Not through popups or dark patterns — through genuine value that makes people WANT to tell others.
+> The CLI itself should make sharing effortless: `egos share` = generate an invite.
+> Every README, every output, every error message should remind: "This is free. Share it."
+
+### Article 3: No Barriers
+> - **No WiFi barrier** — works over internet, not just LAN
+> - **No account barrier** — works without signup
+> - **No cost barrier** — $0 forever for core functionality
+> - **No skill barrier** — a non-programmer can install and use it
+> - **No platform barrier** — Linux, Android, Raspberry Pi, anything
+
+### Article 4: Privacy Is Sacred
+> Your thoughts are yours. All data local by default.
+> Cloud is opt-in, per-message, with explicit consent.
+> No telemetry. No analytics. No data harvesting. Ever.
+
+### Article 5: Open Source Is The Way
+> MIT license. Fork it, improve it, make it yours.
+> Contributions welcome from anyone, anywhere.
+
+---
+
+## MANDAMENTOS
+
+1. **HELP** → Every feature must answer: "How does this help someone?"
+2. **SHARE** → Every touchpoint should invite organic sharing
+3. **SIMPLE** → If a non-programmer can't use it, simplify it
+4. **LOCAL** → Data stays local unless user explicitly opts for cloud
+5. **AGNOSTIC** → Transport, AI, device — never lock in
+6. **APPEND** → Events are never deleted. History is sacred.
+7. **LIGHT** → Minimal dependencies. Fast startup. Low memory.
+8. **COMMIT** → Conventional commits (feat:/fix:/docs:) every 30-60min
+9. **TEST** → Every transport and command must have integration tests
+10. **SCOPE** → Do ONLY what was asked. ASK before adding features.
+
+## ARCHITECTURE RULES
+
+### Transports (pluggable)
+```
+KDE Connect (LAN)  → Layer 0 default, zero config
+WebSocket (WAN)    → Internet relay via EGOS relay server
+TCP Direct         → Point-to-point when IP known
+Bluetooth          → Future: proximity without WiFi
+```
+
+### AI Providers (pluggable)
+```
+Ollama (local)     → Default if available, $0
+OpenRouter (cloud) → Fallback, user provides key
+None               → CLI works perfectly without AI
+```
+
+### Storage
+```
+SQLite             → ~/.local/share/egos-self/events.db
+Append-only        → INSERT only, no UPDATE, no DELETE
+```
+
+## PROIBIÇÕES
+
+1. **NEVER** collect telemetry or analytics
+2. **NEVER** require an account or signup
+3. **NEVER** send data to any server without explicit user consent
+4. **NEVER** add paid features to the core CLI
+5. **NEVER** break offline functionality
+
+## SSOT
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Identity, quick start, architecture |
+| `ROADMAP.md` | All phases and tasks |
+| `.windsurfrules` | Constitution and rules (this file) |
+| `pyproject.toml` | Dependencies and CLI entry point |
+
+## TECH STACK
+
+| Layer | Technology |
+|-------|------------|
+| CLI | Python 3.11+, Click, Rich |
+| Transport | dbus-next (KDE Connect), websockets (WAN) |
+| Storage | SQLite (append-only) |
+| AI | litellm + Ollama/OpenRouter |
+| Tests | pytest |

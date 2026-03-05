@@ -271,5 +271,54 @@ def stats():
             console.print(f"  {t}: {c}")
 
 
+@main.command()
+def share():
+    """Share EGOS Self with someone. Generate an install link."""
+    console.print()
+    console.print("[bold cyan]Share EGOS Self[/bold cyan]")
+    console.print()
+    console.print("If this tool helped you, share it with someone who needs it.")
+    console.print("It's free, open source, and takes 2 minutes to install.")
+    console.print()
+    console.print("[bold]Send them this:[/bold]")
+    console.print()
+    console.print("  [green]git clone https://github.com/enioxt/egos-self.git[/green]")
+    console.print("  [green]cd egos-self && pip install -e .[/green]")
+    console.print("  [green]egos status[/green]")
+    console.print()
+    console.print("[dim]GitHub:[/dim] https://github.com/enioxt/egos-self")
+    console.print("[dim]License:[/dim] MIT — free forever, no account needed")
+    console.print()
+    console.print("[bold yellow]The best tool is the one you share.[/bold yellow]")
+    console.print()
+
+    log_event("share", {"action": "generated_invite"})
+
+
+@main.command()
+@click.option("--port", default=8765, help="Port to run relay on")
+@click.option("--host", default="0.0.0.0", help="Host to bind to")
+def relay(port: int, host: str):
+    """Start a WebSocket relay server for internet-wide communication."""
+    try:
+        import websockets  # noqa: F401
+    except ImportError:
+        console.print("[red]Install websockets first:[/red] pip install websockets")
+        return
+
+    from egos_self.relay import run_relay
+
+    console.print(f"[bold cyan]EGOS Self Relay[/bold cyan] v{__version__}")
+    console.print(f"Listening on ws://{host}:{port}")
+    console.print("[dim]No data stored. Pure pass-through relay.[/dim]")
+    console.print("[dim]Press Ctrl+C to stop.[/dim]")
+    console.print()
+
+    try:
+        asyncio.run(run_relay(host=host, port=port))
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Relay stopped.[/yellow]")
+
+
 if __name__ == "__main__":
     main()
