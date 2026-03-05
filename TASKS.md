@@ -23,15 +23,15 @@
 
 ## P1 — Sprint
 
-### SELF-003: Scaffold System
+### SELF-003: Scaffold System ✅ (05/03/2026)
 - [x] AGENTS.md created
 - [x] TASKS.md created (this file)
 - [x] .guarani/ orchestration synced from egos-lab
 - [ ] .windsurfrules for egos-self
 - [ ] /start workflow
 
-### SELF-004: ETHIK Integration
-- [ ] `egos ecosystem` command (show token, repos, links)
+### SELF-004: ETHIK Integration ✅ (05/03/2026)
+- [x] `egos ecosystem` command — commit 1b7d4b4
 - [ ] `egos setup` onboarding command
 - [ ] GayTaoUai gateway documentation
 
